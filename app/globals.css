@@ -1,26 +1,1235 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ═══════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES — DARK (default)
+   ═══════════════════════════════════════════════ */
+:root, [data-theme="dark"] {
+  --bg:            #050718;
+  --bg2:           #080b1f;
+  --surface:       rgba(5,12,35,0.82);
+  --surface2:      rgba(0,15,45,0.7);
+  --surface3:      rgba(0,12,35,0.6);
+  --border:        rgba(0,212,255,0.12);
+  --border-strong: rgba(0,212,255,0.35);
+  --accent:        #00d4ff;
+  --accent2:       #0066ff;
+  --accent3:       #7b8fff;
+  --text:          #ffffff;
+  --text-secondary:rgba(160,180,255,0.65);
+  --text-muted:    rgba(160,180,255,0.35);
+  --text-label:    rgba(0,212,255,0.5);
+  --input-bg:      rgba(0,20,50,0.6);
+  --input-border:  rgba(0,212,255,0.18);
+  --input-text:    #ffffff;
+  --input-ph:      rgba(160,180,220,0.35);
+  --card-bg:       rgba(5,12,35,0.8);
+  --sidebar-bg:    rgba(4,9,28,0.9);
+  --nav-text:      rgba(160,190,255,0.55);
+  --nav-active:    #00d4ff;
+  --error:         rgba(255,100,120,0.9);
+  --success:       #4fffb0;
+  --warn:          #ffb347;
+  --floor-bg:      rgba(4,18,52,0.96);
+  --wall-fill:     rgba(0,60,140,0.95);
+  --furniture-fill:rgba(8,28,68,0.88);
+  --furniture-stroke:rgba(0,200,255,0.85);
+  --door-gap:      #050718;
+  --door-frame:    rgba(0,212,255,1);
+  --door-leaf:     rgba(0,40,90,0.92);
+  --door-wedge:    rgba(0,180,255,0.07);
+  --door-arc:      rgba(0,212,255,0.55);
+  --door-hinge:    rgba(0,255,220,1);
+  --shadow-glow:   rgba(0,120,255,0.18);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ═══════════════════════════════════════════════
+   CSS CUSTOM PROPERTIES — LIGHT
+   ═══════════════════════════════════════════════ */
+[data-theme="light"] {
+  --bg:            #eef2ff;
+  --bg2:           #e4eaff;
+  --surface:       #ffffff;
+  --surface2:      #f4f7ff;
+  --surface3:      #eaefff;
+  --border:        rgba(0,60,160,0.15);
+  --border-strong: rgba(0,60,160,0.4);
+  --accent:        #0052cc;
+  --accent2:       #003a99;
+  --accent3:       #3344bb;
+  --text:          #0a0e28;
+  --text-secondary:#1e2d5a;
+  --text-muted:    #4a5680;
+  --text-label:    #0044aa;
+  --input-bg:      #ffffff;
+  --input-border:  rgba(0,60,160,0.3);
+  --input-text:    #0a0e28;
+  --input-ph:      #7a88b0;
+  --card-bg:       #ffffff;
+  --sidebar-bg:    #f0f4ff;
+  --nav-text:      #1e2d5a;
+  --nav-active:    #0044cc;
+  --error:         #c0001e;
+  --success:       #006638;
+  --warn:          #8a4800;
+  --floor-bg:      #dde6ff;
+  --wall-fill:     rgba(0,50,130,0.85);
+  --furniture-fill:#c8d8ff;
+  --furniture-stroke:#0044bb;
+  --door-gap:      #eef2ff;
+  --door-frame:    #0044cc;
+  --door-leaf:     #b8ccff;
+  --door-wedge:    rgba(0,80,200,0.1);
+  --door-arc:      rgba(0,60,180,0.6);
+  --door-hinge:    #007a5a;
+  --shadow-glow:   rgba(0,60,180,0.14);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ═══════════════════════════════════════════════
+   BASE RESET
+   ═══════════════════════════════════════════════ */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  overflow-x: hidden;
+  transition: background 0.25s, color 0.25s;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ═══════════════════════════════════════════════
+   ANIMATIONS
+   ═══════════════════════════════════════════════ */
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50%       { opacity: 0.3;  transform: scale(1.02); }
+}
+@keyframes float-panel {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+@keyframes scan-line {
+  0%   { opacity: 0; transform: translateY(-100%); }
+  50%  { opacity: 0.4; }
+  100% { opacity: 0; transform: translateY(100%); }
+}
+
+.pulse-ring    { animation: pulse-ring 4s ease-in-out infinite; }
+.float-panel   { animation: float-panel 3s ease-in-out infinite; }
+.float-panel-2 { animation: float-panel 3.5s ease-in-out infinite 0.5s; }
+.float-panel-3 { animation: float-panel 4s ease-in-out infinite 1s; }
+.float-panel-4 { animation: float-panel 3.2s ease-in-out infinite 1.5s; }
+
+/* ═══════════════════════════════════════════════
+   SHARED COMPONENTS
+   ═══════════════════════════════════════════════ */
+.glow-btn {
+  background: linear-gradient(135deg, #00d4ff, #0066ff);
+  box-shadow: 0 0 20px rgba(0,212,255,0.35), 0 0 40px rgba(0,102,255,0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.glow-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 30px rgba(0,212,255,0.6), 0 0 60px rgba(0,102,255,0.35);
+}
+[data-theme="light"] .glow-btn {
+  background: linear-gradient(135deg, #0066cc, #0033aa);
+  box-shadow: 0 0 16px rgba(0,80,200,0.3), 0 0 32px rgba(0,40,160,0.15);
+}
+[data-theme="light"] .glow-btn:hover {
+  box-shadow: 0 0 24px rgba(0,80,200,0.5), 0 0 48px rgba(0,40,160,0.25);
+}
+
+.cyan-gradient {
+  background: linear-gradient(90deg, #00d4ff, #7b8fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+[data-theme="light"] .cyan-gradient {
+  background: linear-gradient(90deg, #0055cc, #4455cc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hud-panel {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 12px var(--shadow-glow), inset 0 0 12px rgba(0,212,255,0.03);
+}
+
+.room-wall {
+  fill: rgba(0,30,60,0.6);
+  stroke: rgba(0,212,255,0.5);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 4px rgba(0,212,255,0.3));
+}
+[data-theme="light"] .room-wall {
+  fill: rgba(200,220,255,0.5);
+  stroke: rgba(0,80,200,0.6);
+}
+
+.room-furniture {
+  fill: rgba(0,40,80,0.5);
+  stroke: rgba(0,180,255,0.6);
+  stroke-width: 1;
+  filter: drop-shadow(0 0 3px rgba(0,180,255,0.25));
+}
+[data-theme="light"] .room-furniture {
+  fill: rgba(180,210,255,0.6);
+  stroke: rgba(0,80,180,0.7);
+}
+
+.dim-label {
+  fill: rgba(0,212,255,0.5);
+  font-size: 7px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+[data-theme="light"] .dim-label { fill: rgba(0,80,180,0.6); }
+
+/* ═══════════════════════════════════════════════
+   AUTH PAGES
+   ═══════════════════════════════════════════════ */
+.auth-input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 11px 14px;
+  color: var(--input-text);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.auth-input::placeholder { color: var(--input-ph); }
+.auth-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+}
+[data-theme="light"] .auth-input:focus {
+  box-shadow: 0 0 0 3px rgba(0,80,200,0.1);
+}
+.auth-input.error {
+  border-color: rgba(255,80,100,0.6);
+  box-shadow: 0 0 0 3px rgba(255,80,100,0.07);
+}
+[data-theme="light"] .auth-input.error {
+  border-color: rgba(200,30,50,0.6);
+}
+
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 0 60px var(--shadow-glow), 0 0 120px rgba(0,40,120,0.08);
+  backdrop-filter: blur(16px);
+}
+[data-theme="light"] .auth-card {
+  box-shadow: 0 4px 32px rgba(0,60,180,0.1), 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.auth-submit {
+  width: 100%;
+  background: linear-gradient(135deg, #00d4ff, #0055ff);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.07em;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0,212,255,0.3), 0 0 40px rgba(0,85,255,0.15);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.auth-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 28px rgba(0,212,255,0.5), 0 0 56px rgba(0,85,255,0.25);
+}
+.auth-submit:active { transform: translateY(0); }
+[data-theme="light"] .auth-submit {
+  background: linear-gradient(135deg, #0066cc, #0033aa);
+  box-shadow: 0 0 16px rgba(0,80,200,0.25);
+}
+
+.field-error {
+  color: var(--error);
+  font-size: 0.75rem;
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+
+/* ═══════════════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════════════ */
+.dash-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+}
+
+.dash-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--nav-text);
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  transition: all 0.18s;
+  text-decoration: none;
+  background: none;
+  border-top: none; border-right: none; border-bottom: none;
+  width: 100%;
+  text-align: left;
+}
+.dash-nav-item:hover {
+  color: var(--accent);
+  background: rgba(0,212,255,0.05);
+  border-left-color: rgba(0,212,255,0.4);
+}
+[data-theme="light"] .dash-nav-item:hover {
+  background: rgba(0,80,200,0.06);
+  border-left-color: rgba(0,80,200,0.4);
+}
+.dash-nav-item.active {
+  color: var(--nav-active);
+  background: rgba(0,212,255,0.08);
+  border-left-color: var(--nav-active);
+}
+[data-theme="light"] .dash-nav-item.active {
+  background: rgba(0,80,200,0.08);
+}
+
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.3rem 1.4rem;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 24px var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.room-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.3rem;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.room-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 24px var(--shadow-glow);
+  transform: translateY(-2px);
+}
+
+.view-plan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 7px;
+  border: 1px solid var(--border-strong);
+  background: rgba(0,212,255,0.06);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.18s;
+}
+.view-plan-btn:hover {
+  background: rgba(0,212,255,0.14);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--shadow-glow);
+}
+[data-theme="light"] .view-plan-btn {
+  background: rgba(0,80,200,0.06);
+}
+[data-theme="light"] .view-plan-btn:hover {
+  background: rgba(0,80,200,0.12);
+}
+
+@media (max-width: 768px) {
+  .dash-sidebar { display: none; }
+  .dash-main { margin-left: 0 !important; }
+  .dash-mobile-bar { display: flex !important; }
+  .dash-main { padding-top: 76px !important; }
+}
+
+/* ═══════════════════════════════════════════════
+   ROOM SETUP
+   ═══════════════════════════════════════════════ */
+.rs-page {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.rs-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1.2rem;
+}
+
+.rs-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--text-label);
+  margin-bottom: 1.2rem;
+  text-transform: uppercase;
+}
+
+.rs-input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  padding: 10px 13px;
+  color: var(--input-text);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+  font-family: inherit;
+}
+.rs-input::placeholder { color: var(--input-ph); }
+.rs-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,212,255,0.07);
+}
+[data-theme="light"] .rs-input:focus {
+  box-shadow: 0 0 0 3px rgba(0,80,200,0.08);
+}
+.rs-input.err {
+  border-color: rgba(255,80,100,0.55);
+  box-shadow: 0 0 0 3px rgba(255,80,100,0.06);
+}
+
+.rs-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.rs-field-err {
+  color: var(--error);
+  font-size: 0.7rem;
+  margin-top: 3px;
+}
+
+.rs-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.rs-toggle-track {
+  width: 38px; height: 20px; border-radius: 10px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  position: relative; transition: background 0.2s, border-color 0.2s; flex-shrink: 0;
+}
+.rs-toggle-track.on {
+  background: rgba(0,212,255,0.18);
+  border-color: var(--accent);
+}
+[data-theme="light"] .rs-toggle-track.on {
+  background: rgba(0,80,200,0.15);
+}
+.rs-toggle-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 0.2s, background 0.2s;
+}
+.rs-toggle-track.on .rs-toggle-thumb {
+  transform: translateX(18px);
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+.rs-size-pill {
+  padding: 6px 14px; border-radius: 6px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-muted);
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
+  cursor: pointer; transition: all 0.15s;
+}
+.rs-size-pill.active {
+  background: rgba(0,212,255,0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+[data-theme="light"] .rs-size-pill.active {
+  background: rgba(0,80,200,0.1);
+}
+
+.rs-add-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 7px;
+  border: 1px dashed var(--border-strong);
+  background: rgba(0,212,255,0.04);
+  color: var(--accent);
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.05em;
+  cursor: pointer; transition: all 0.18s;
+}
+.rs-add-btn:hover {
+  background: rgba(0,212,255,0.09);
+  border-color: var(--accent);
+}
+[data-theme="light"] .rs-add-btn {
+  background: rgba(0,80,200,0.04);
+}
+[data-theme="light"] .rs-add-btn:hover {
+  background: rgba(0,80,200,0.09);
+}
+
+.rs-remove-btn {
+  background: none; border: none;
+  color: rgba(255,80,100,0.45);
+  cursor: pointer; padding: 4px; border-radius: 4px;
+  transition: color 0.15s; line-height: 1; flex-shrink: 0;
+}
+.rs-remove-btn:hover { color: rgba(255,80,100,0.85); }
+
+.rs-furniture-row {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.rs-preview-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.2rem;
+  position: sticky;
+  top: 80px;
+}
+
+.rs-step-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border-strong);
+  transition: all 0.2s;
+}
+.rs-step-dot.done {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+  border-color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════════
+   LIGHT MODE — GLOBAL INLINE-STYLE OVERRIDES
+   These fix hardcoded rgba/hex colors that are
+   invisible on light backgrounds.
+   ═══════════════════════════════════════════════ */
+
+/* ── Body & page backgrounds ── */
+[data-theme="light"] body,
+[data-theme="light"] main,
+[data-theme="light"] .rs-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── All headings ── */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3 {
+  color: var(--text) !important;
+}
+
+/* ── Paragraph / description text ── */
+[data-theme="light"] p {
+  color: var(--text-secondary);
+}
+
+/* ── Sticky headers / navbars ── */
+[data-theme="light"] header,
+[data-theme="light"] nav {
+  background: rgba(240,244,255,0.96) !important;
+  border-bottom-color: rgba(0,60,160,0.15) !important;
+}
+
+/* ── Breadcrumb separators ── */
+[data-theme="light"] span[style*="rgba(0,212,255,0.2)"] {
+  color: #7a88b0 !important;
+}
+
+/* ── Breadcrumb / sub-labels ── */
+[data-theme="light"] span[style*="rgba(160,180,255,0.5)"],
+[data-theme="light"] span[style*="rgba(160,180,255,0.4)"],
+[data-theme="light"] span[style*="rgba(160,180,255,0.55)"],
+[data-theme="light"] span[style*="rgba(160,180,255,0.65)"] {
+  color: #1e2d5a !important;
+}
+
+/* ── Micro uppercase labels (GENERATED LAYOUT, CONTROL CENTER, etc.) ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.5)"],
+[data-theme="light"] div[style*="rgba(0,212,255,0.45)"],
+[data-theme="light"] div[style*="rgba(0,212,255,0.4)"],
+[data-theme="light"] div[style*="rgba(0,212,255,0.35)"],
+[data-theme="light"] div[style*="rgba(0,212,255,0.3)"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Secondary description paragraphs ── */
+[data-theme="light"] p[style*="rgba(160,180,255"],
+[data-theme="light"] p[style*="rgba(160,190,255"],
+[data-theme="light"] p[style*="rgba(200,210,255"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Muted spans ── */
+[data-theme="light"] span[style*="rgba(160,180,255"],
+[data-theme="light"] span[style*="rgba(160,190,255"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Card inner label rows (DIMENSIONS, FURNITURE, etc.) ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.4)"],
+[data-theme="light"] div[style*="rgba(0,212,255,0.35)"],
+[data-theme="light"] div[style*="rgba(0,212,255,0.3)"],
+[data-theme="light"] div[style*="rgba(0,212,255,0.25)"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Card value text ── */
+[data-theme="light"] div[style*="rgba(255,255,255,0.8)"],
+[data-theme="light"] div[style*="rgba(255,255,255,0.75)"],
+[data-theme="light"] div[style*="rgba(255,255,255,0.7)"] {
+  color: var(--text) !important;
+}
+
+/* ── Stat card sub-labels ── */
+[data-theme="light"] div[style*="rgba(160,180,255,0.4)"],
+[data-theme="light"] div[style*="rgba(160,180,255,0.35)"],
+[data-theme="light"] div[style*="rgba(160,180,255,0.3)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Analysis page: metric card labels ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.4)"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Analysis page: walking space / score text ── */
+[data-theme="light"] div[style*="rgba(160,180,255,0.45)"],
+[data-theme="light"] div[style*="rgba(160,180,255,0.5)"],
+[data-theme="light"] div[style*="rgba(160,180,255,0.55)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Analysis: recommendation card body text ── */
+[data-theme="light"] p[style*="rgba(200,210,255,0.65)"],
+[data-theme="light"] span[style*="rgba(200,210,255,0.65)"],
+[data-theme="light"] div[style*="rgba(200,210,255,0.65)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Analysis: recommendation card item name ── */
+[data-theme="light"] div[style*="color: \"#fff\""],
+[data-theme="light"] div[style*='color: "#fff"'] {
+  color: var(--text) !important;
+}
+
+/* ── Analysis: sub-labels inside rec cards ── */
+[data-theme="light"] div[style*="rgba(160,180,255,0.45)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Analysis: score breakdown weight label ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.3)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Analysis: concerns/positives text ── */
+[data-theme="light"] span[style*="rgba(200,210,255,0.65)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Analysis: "No major concerns" text ── */
+[data-theme="light"] p[style*="rgba(79,255,176,0.6)"] {
+  color: var(--success) !important;
+}
+[data-theme="light"] p[style*="rgba(160,180,255,0.4)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Layout status sidebar ── */
+[data-theme="light"] span[style*="rgba(160,180,255,0.55)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Furniture list sidebar item names ── */
+[data-theme="light"] div[style*="rgba(255,255,255,0.75)"] {
+  color: var(--text) !important;
+}
+[data-theme="light"] div[style*="rgba(160,180,255,0.35)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Utilization sidebar description ── */
+[data-theme="light"] div[style*="rgba(160,180,255,0.35)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Info card panels (floor plan HUD) ── */
+[data-theme="light"] div[style*="rgba(0,10,30,0.72)"],
+[data-theme="light"] g[style*="rgba(0,10,30,0.72)"] {
+  fill: rgba(240,244,255,0.95) !important;
+}
+
+/* ── Room setup: toggle label text ── */
+[data-theme="light"] span[style*="rgba(0,212,255,0.85)"] {
+  color: var(--accent) !important;
+}
+[data-theme="light"] span[style*="rgba(160,180,255,0.5)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Room setup: helper text (no window, auto door) ── */
+[data-theme="light"] p[style*="rgba(160,180,255,0.3)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Room setup: planned label ── */
+[data-theme="light"] span[style*="rgba(0,212,255,0.35)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Room setup: item index label ── */
+[data-theme="light"] span[style*="rgba(0,212,255,0.4)"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Room setup: preview box labels ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.45)"] {
+  color: var(--text-label) !important;
+}
+[data-theme="light"] div[style*="rgba(0,212,255,0.35)"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Room setup: preview quick-stat labels ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.35)"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Dashboard: room type badge ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.07)"],
+[data-theme="light"] div[style*="rgba(0,212,255,0.08)"] {
+  background: rgba(0,60,160,0.08) !important;
+}
+[data-theme="light"] span[style*="rgba(0,212,255,0.7)"] {
+  color: var(--accent) !important;
+}
+
+/* ── Dashboard: utilization bar track ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.1)"] {
+  background: rgba(0,60,160,0.12) !important;
+}
+
+/* ── Dashboard: "Updated X ago" text ── */
+[data-theme="light"] span[style*="rgba(160,180,255,0.35)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Dashboard: empty state text ── */
+[data-theme="light"] p[style*="rgba(255,255,255,0.5)"] {
+  color: var(--text-secondary) !important;
+}
+[data-theme="light"] p[style*="rgba(160,180,255,0.35)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Dashboard: sidebar NAVIGATION label ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.3)"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Login/Signup: card sub-label (SMART ROOM PLANNING) ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.6)"] {
+  color: var(--accent) !important;
+}
+
+/* ── Login/Signup: eye icon button ── */
+[data-theme="light"] button[style*="rgba(0,212,255,0.5)"] {
+  color: var(--accent) !important;
+}
+
+/* ── Landing page: hero sub-text ── */
+[data-theme="light"] div[style*="rgba(180,200,255,0.7)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Landing page: HUD panel labels ── */
+[data-theme="light"] .hud-panel div[style*="rgba(0,212,255,0.5)"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Ambient glow blobs — hide in light mode (they look odd on white) ── */
+[data-theme="light"] div[style*="radial-gradient(ellipse, rgba(0,100,255,0.05)"],
+[data-theme="light"] div[style*="radial-gradient(ellipse, rgba(0,60,180,0.06)"],
+[data-theme="light"] div[style*="radial-gradient(ellipse, rgba(0,80,200,0.06)"],
+[data-theme="light"] div[style*="radial-gradient(ellipse, rgba(0,120,255,0.06)"] {
+  opacity: 0 !important;
+}
+
+/* ── Surface backgrounds for inline-styled cards ── */
+[data-theme="light"] div[style*="rgba(5,12,35,0.8)"],
+[data-theme="light"] div[style*="rgba(5,12,35,0.82)"],
+[data-theme="light"] div[style*="rgba(5,12,35,0.85)"] {
+  background: var(--card-bg) !important;
+  border-color: rgba(0,60,160,0.15) !important;
+}
+
+[data-theme="light"] div[style*="rgba(0,15,40,0.5)"],
+[data-theme="light"] div[style*="rgba(0,15,40,0.6)"],
+[data-theme="light"] div[style*="rgba(0,12,35,0.6)"] {
+  background: var(--surface2) !important;
+}
+
+[data-theme="light"] div[style*="rgba(0,10,30,0.5)"],
+[data-theme="light"] div[style*="rgba(0,10,40,0.4)"],
+[data-theme="light"] div[style*="rgba(0,10,30,0.4)"] {
+  background: var(--surface3) !important;
+}
+
+/* ── Analysis: score ring /100 label ── */
+[data-theme="light"] text[style*="rgba(160,180,255,0.45)"] {
+  fill: var(--text-muted) !important;
+}
+
+/* ── Analysis: bar track ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.08)"] {
+  background: rgba(0,60,160,0.1) !important;
+}
+
+/* ── Analysis: walking space icon circle ── */
+[data-theme="light"] div[style*="rgba(160,180,255,0.5)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Analysis: breakdown weight text ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.3)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Bottom action links (Edit Room, Dashboard) ── */
+[data-theme="light"] a[style*="rgba(160,180,255,0.6)"],
+[data-theme="light"] a[style*="rgba(160,180,255,0.4)"] {
+  color: var(--text-secondary) !important;
+  border-color: rgba(0,60,160,0.25) !important;
+}
+
+/* ── Floor plan canvas: info HUD panel text ── */
+[data-theme="light"] text[fill="rgba(0,212,255,0.45)"] {
+  fill: var(--text-label) !important;
+}
+[data-theme="light"] text[fill="rgba(255,255,255,0.75)"] {
+  fill: var(--text) !important;
+}
+
+/* ── Floor plan: dimension line labels ── */
+[data-theme="light"] text[fill="rgba(0,212,255,0.55)"] {
+  fill: var(--text-label) !important;
+}
+
+/* ── Furniture labels on floor plan ── */
+[data-theme="light"] text[fill="rgba(0,220,255,0.92)"] {
+  fill: #003399 !important;
+}
+[data-theme="light"] text[fill="rgba(0,180,220,0.65)"] {
+  fill: #1e3a7a !important;
+}
+[data-theme="light"] text[fill="rgba(180,160,255,0.92)"] {
+  fill: #330099 !important;
+}
+[data-theme="light"] text[fill="rgba(140,120,220,0.65)"] {
+  fill: #2a1a7a !important;
+}
+
+/* ── PLANNED badge text ── */
+[data-theme="light"] text[fill="rgba(180,160,255,0.9)"] {
+  fill: #330099 !important;
+}
+
+/* ── Sidebar utilization description ── */
+[data-theme="light"] div[style*="rgba(160,180,255,0.35)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── rs-input select option background ── */
+[data-theme="light"] select option {
+  background: #ffffff;
+  color: #0a0e28;
+}
+
+/* ── ThemeToggle button ── */
+[data-theme="light"] button[aria-label*="mode"],
+[data-theme="light"] button[title*="mode"] {
+  background: #ffffff !important;
+  border-color: rgba(0,60,160,0.25) !important;
+  color: #1e2d5a !important;
+}
+
+/* ── Ensure all text inside stat-card and room-card is readable ── */
+[data-theme="light"] .stat-card,
+[data-theme="light"] .room-card {
+  background: #ffffff;
+  border-color: rgba(0,60,160,0.15);
+  box-shadow: 0 2px 12px rgba(0,40,120,0.07);
+}
+
+[data-theme="light"] .stat-card *,
+[data-theme="light"] .room-card * {
+  --text: #0a0e28;
+}
+
+/* ── Auth card text ── */
+[data-theme="light"] .auth-card {
+  background: #ffffff;
+  border-color: rgba(0,60,160,0.15);
+}
+
+/* ── rs-section ── */
+[data-theme="light"] .rs-section {
+  background: #ffffff;
+  border-color: rgba(0,60,160,0.15);
+  box-shadow: 0 1px 6px rgba(0,40,120,0.06);
+}
+
+/* ── rs-furniture-row ── */
+[data-theme="light"] .rs-furniture-row {
+  background: var(--surface2);
+  border-color: rgba(0,60,160,0.12);
+}
+
+/* ── rs-preview-box ── */
+[data-theme="light"] .rs-preview-box {
+  background: #ffffff;
+  border-color: rgba(0,60,160,0.15);
+  box-shadow: 0 2px 12px rgba(0,40,120,0.07);
+}
+
+/* ── dash-sidebar ── */
+[data-theme="light"] .dash-sidebar {
+  background: #f0f4ff;
+  border-right-color: rgba(0,60,160,0.15);
+  box-shadow: 2px 0 12px rgba(0,40,120,0.06);
+}
+
+/* ── hud-panel in light mode ── */
+[data-theme="light"] .hud-panel {
+  background: rgba(255,255,255,0.95);
+  border-color: rgba(0,60,160,0.2);
+  box-shadow: 0 2px 12px rgba(0,40,120,0.1);
+}
+
+/* ── view-plan-btn ── */
+[data-theme="light"] .view-plan-btn {
+  color: var(--accent);
+  border-color: rgba(0,60,160,0.35);
+}
+
+/* ── glow-btn text always white ── */
+[data-theme="light"] .glow-btn {
+  color: #ffffff !important;
+}
+
+/* ── Verdict badges (BUY / CONSIDER / DON'T BUY) ── */
+[data-theme="light"] div[style*="rgba(79,255,176,0.1)"] {
+  background: rgba(0,120,70,0.08) !important;
+  border-color: rgba(0,120,70,0.35) !important;
+}
+[data-theme="light"] div[style*="rgba(255,179,71,0.1)"] {
+  background: rgba(160,80,0,0.08) !important;
+  border-color: rgba(160,80,0,0.35) !important;
+}
+[data-theme="light"] div[style*="rgba(255,80,100,0.1)"] {
+  background: rgba(180,0,30,0.07) !important;
+  border-color: rgba(180,0,30,0.3) !important;
+}
+
+/* ── Verdict badge pill ── */
+[data-theme="light"] div[style*="rgba(79,255,176,0.35)"] {
+  background: rgba(0,120,70,0.15) !important;
+  color: #005a30 !important;
+}
+[data-theme="light"] div[style*="rgba(255,179,71,0.35)"] {
+  background: rgba(160,80,0,0.15) !important;
+  color: #7a3c00 !important;
+}
+[data-theme="light"] div[style*="rgba(255,80,100,0.35)"] {
+  background: rgba(180,0,30,0.12) !important;
+  color: #8a0018 !important;
+}
+
+/* ── Verdict card body text ── */
+[data-theme="light"] div[style*="rgba(79,255,176,0.1)"] p,
+[data-theme="light"] div[style*="rgba(255,179,71,0.1)"] p,
+[data-theme="light"] div[style*="rgba(255,80,100,0.1)"] p {
+  color: var(--text-secondary) !important;
+}
+[data-theme="light"] div[style*="rgba(79,255,176,0.1)"] div,
+[data-theme="light"] div[style*="rgba(255,179,71,0.1)"] div,
+[data-theme="light"] div[style*="rgba(255,80,100,0.1)"] div {
+  color: var(--text) !important;
+}
+
+/* ── Alternative suggestion box inside rec cards ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.05)"] {
+  background: rgba(0,60,160,0.05) !important;
+  border-color: rgba(0,60,160,0.15) !important;
+}
+[data-theme="light"] div[style*="rgba(0,212,255,0.05)"] div {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Score ring /100 text ── */
+[data-theme="light"] text[fill="rgba(160,180,255,0.45)"] {
+  fill: #4a5680 !important;
+}
+
+/* ── Walking space icon circle border ── */
+[data-theme="light"] div[style*="border: \"2px solid"] {
+  border-color: var(--accent) !important;
+}
+
+/* ── Concerns icon ── */
+[data-theme="light"] span[style*="color: \"#ff5064\""] {
+  color: #c0001e !important;
+}
+[data-theme="light"] span[style*='color: "#ff5064"'] {
+  color: #c0001e !important;
+}
+
+/* ── Positives icon ── */
+[data-theme="light"] span[style*="color: \"#4fffb0\""] {
+  color: #006638 !important;
+}
+[data-theme="light"] span[style*='color: "#4fffb0"'] {
+  color: #006638 !important;
+}
+
+/* ── Score breakdown bar track ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.08)"] {
+  background: rgba(0,60,160,0.1) !important;
+}
+
+/* ── Layout page: info cards ── */
+[data-theme="light"] div[style*="rgba(5,12,35,0.8)"] {
+  background: #ffffff !important;
+  border-color: rgba(0,60,160,0.15) !important;
+}
+
+/* ── Layout page: canvas wrapper ── */
+[data-theme="light"] div[style*="rgba(5,12,35,0.82)"] {
+  background: #ffffff !important;
+  border-color: rgba(0,60,160,0.15) !important;
+}
+
+/* ── Layout page: sidebar inner panels ── */
+[data-theme="light"] div[style*="rgba(0,15,40,0.5)"] {
+  background: var(--surface2) !important;
+}
+
+/* ── Legend text ── */
+[data-theme="light"] span[style*="rgba(160,180,255,0.55)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Zoom control buttons ── */
+[data-theme="light"] button[style*="rgba(0,212,255,0.05)"] {
+  background: #ffffff !important;
+  border-color: rgba(0,60,160,0.25) !important;
+  color: var(--accent) !important;
+}
+
+/* ── Floor plan SVG: wall gradient override ── */
+[data-theme="light"] svg rect[fill*="rgba(0,60,140"] {
+  fill: rgba(0,50,130,0.85) !important;
+}
+
+/* ── Floor plan SVG: floor gradient override ── */
+[data-theme="light"] svg rect[fill*="rgba(4,18,52"] {
+  fill: #dde6ff !important;
+}
+
+/* ═══════════════════════════════════════════════
+   LIGHT MODE — SELECT / OPTION DROPDOWN FIX
+   Ensures category dropdowns are readable without
+   relying on inline styles being absent.
+   ═══════════════════════════════════════════════ */
+
+/* Native select element */
+[data-theme="light"] select.rs-input {
+  background-color: #ffffff !important;
+  color: #0a0e28 !important;
+  border-color: rgba(0,60,160,0.3) !important;
+  color-scheme: light;
+}
+
+/* Every option inside any select on the page */
+[data-theme="light"] select option,
+[data-theme="light"] select.rs-input option {
+  background-color: #ffffff !important;
+  color: #0a0e28 !important;
+}
+
+/* Focus ring */
+[data-theme="light"] select.rs-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(0,80,200,0.1) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   LIGHT MODE — ANALYSIS PAGE REMAINING GAPS
+   Only targets inline-style patterns not yet
+   covered by the existing override block above.
+   Dark mode is untouched (no :root / dark rules).
+   ═══════════════════════════════════════════════ */
+
+/* ── Metric cards: dark card background → white ── */
+[data-theme="light"] div[style*="rgba(5,12,35,0.8)"][style*="border-radius: 10px"],
+[data-theme="light"] div[style*="rgba(5,12,35,0.8)"][style*="borderRadius: 10"] {
+  background: #ffffff !important;
+  border-color: rgba(0,60,160,0.14) !important;
+  box-shadow: 0 1px 6px rgba(0,40,120,0.07) !important;
+}
+
+/* ── Recommendation detail mini-cards (Fit / Space Impact / Walking Impact) ── */
+[data-theme="light"] div[style*="rgba(0,10,30,0.4)"] {
+  background: rgba(0,60,160,0.05) !important;
+  border-color: rgba(0,60,160,0.12) !important;
+}
+
+/* ── Recommendation item name (#fff hardcoded) ── */
+[data-theme="light"] div[style*='color: "#fff"'],
+[data-theme="light"] div[style*="color: \"#fff\""],
+[data-theme="light"] div[style*="color:#fff"],
+[data-theme="light"] div[style*="color: #fff"] {
+  color: var(--text) !important;
+}
+
+/* ── Recommendation detail value text (rgba(255,255,255,0.7)) ── */
+[data-theme="light"] div[style*="rgba(255,255,255,0.7)"] {
+  color: var(--text) !important;
+}
+
+/* ── Sub-labels inside recommendation detail cards (rgba(0,212,255,0.35)) ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.35)"][style*="letterSpacing"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Walking space row separators ── */
+[data-theme="light"] div[style*="borderBottom"][style*="rgba(0,212,255,0.05)"] {
+  border-bottom-color: rgba(0,60,160,0.1) !important;
+}
+
+/* ── Score breakdown: label text (rgba(160,180,255,0.55)) ── */
+[data-theme="light"] span[style*="rgba(160,180,255,0.55)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Score breakdown: weight text (rgba(0,212,255,0.3)) ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.3)"][style*="Weight"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Utilization sub-stat mini-cards (rgba(0,15,40,0.5)) ── */
+[data-theme="light"] div[style*="rgba(0,15,40,0.5)"][style*="borderRadius: 7"],
+[data-theme="light"] div[style*="rgba(0,15,40,0.5)"][style*="border-radius: 7"] {
+  background: var(--surface2) !important;
+}
+
+/* ── Utilization sub-stat value (#fff) ── */
+[data-theme="light"] div[style*="rgba(0,15,40,0.5)"] div[style*="color: \"#fff\""],
+[data-theme="light"] div[style*="rgba(0,15,40,0.5)"] div[style*='color: "#fff"'] {
+  color: var(--text) !important;
+}
+
+/* ── Analysis page heading subtitle (rgba(255,255,255,0.3)) ── */
+[data-theme="light"] span[style*="rgba(255,255,255,0.3)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── Analysis page heading subtitle (rgba(255,255,255,0.35)) ── */
+[data-theme="light"] span[style*="rgba(255,255,255,0.35)"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── h1 with hardcoded color #fff on analysis page ── */
+[data-theme="light"] h1[style*="color: \"#fff\""],
+[data-theme="light"] h1[style*='color: "#fff"'],
+[data-theme="light"] h1[style*="color: #fff"],
+[data-theme="light"] h1[style*="color:#fff"] {
+  color: var(--text) !important;
+}
+
+/* ── Analysis: spaceEfficiency label (rgba(160,180,255,0.45)) ── */
+[data-theme="light"] span[style*="rgba(160,180,255,0.45)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Analysis: walking space sub-row label (rgba(160,180,255,0.5)) ── */
+[data-theme="light"] span[style*="rgba(160,180,255,0.5)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Analysis: walking space available text (rgba(160,180,255,0.45)) ── */
+[data-theme="light"] div[style*="rgba(160,180,255,0.45)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Analysis: metric card label (rgba(0,212,255,0.4)) ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.4)"][style*="letterSpacing"] {
+  color: var(--text-label) !important;
+}
+
+/* ── Analysis: recommendation alternative suggestion box text ── */
+[data-theme="light"] div[style*="rgba(160,200,255,0.65)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Analysis: alternative box label (rgba(0,212,255,0.45)) ── */
+[data-theme="light"] div[style*="rgba(0,212,255,0.45)"][style*="letterSpacing"] {
+  color: var(--text-label) !important;
 }
