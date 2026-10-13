@@ -635,6 +635,7 @@ export default function GeneratedRoomPage() {
   }, [authLoading, roomId, router, user]);
   const requestMatches = loadedRoom?.userId === user?.id && loadedRoom?.roomId === roomId;
   const data = requestMatches ? loadedRoom?.plan ?? null : null;
+  const calculatedPlacement = useMemo(() => data ? calculateFurniturePlacement(data) : null, [data]);
   const [zoom, setZoom] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -672,7 +673,7 @@ export default function GeneratedRoomPage() {
   }
 
   const allItems = [...data.existing, ...data.planned];
-  const placement = calculateFurniturePlacement(data);
+  const placement = calculatedPlacement!;
   const placedById = new Map(placement.placed.map((entry) => [entry.item.id, entry]));
   const doorConfigured = Boolean(placement.door);
   const { placedItems, unplacedItems } = placement;

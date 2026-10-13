@@ -384,7 +384,7 @@ export default function RoomSetupPage() {
       ...payload,
       door: layout.door ?? { enabled: false, wall: "", distance: "", width: DEFAULT_DOOR_WIDTH_FT, swingDirection: "inward" as const, hinge: "start" as const, autoPlaced: true, warning: layout.doorWarning ?? "No valid entrance position was found." },
       generatedLayout: {
-        placementVersion: 2,
+        placementVersion: 3,
         generatedAt: now,
         placed: layout.placed.map(({ item, x, y, w, h, rotation }) => ({ itemId: item.id, x, y, width: w, height: h, rotation })),
         unplaced: layout.unplacedItems.map(item => ({ itemId: item.id, reason: layout.unplacedReasons.get(item.id) || "No valid position found." })),

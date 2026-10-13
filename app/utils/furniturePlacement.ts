@@ -233,10 +233,13 @@ function readSavedPlacement(
   window: Rect | null
 ): PlacedItem[] | null {
   const saved=data.generatedLayout;
-  if(!saved||typeof saved!=="object"||(saved as {placementVersion?:unknown}).placementVersion!==2)return null;
+  if(!saved||typeof saved!=="object"||(saved as {placementVersion?:unknown}).placementVersion!==3)return null;
   const placedRaw=(saved as {placed?:unknown}).placed;
   const unplacedRaw=(saved as {unplaced?:unknown}).unplaced;
   if(!Array.isArray(placedRaw)||!Array.isArray(unplacedRaw))return null;
+  // Partial layouts may reflect an older bounded-search result. Re-run the
+  // current search instead of treating that old unplaced list as authoritative.
+  if(unplacedRaw.length>0)return null;
   const byId=new Map(items.map(item=>[item.id,item]));
   const seen=new Set<string>();
   const placed:PlacedItem[]=[];
@@ -377,19 +380,39 @@ export function placeItems(
   const dSwing: DoorSwing | null = doorPx > 0 ? { wall: doorWall, distance: doorDistPx, width: doorPx, roomW: roomPxW, roomH: roomPxH } : null;
   const wClear = winEnabled ? windowClearRect(winWall, winDistPx, winPx, roomPxW, roomPxH) : null;
   const step = Math.max(4, Math.round(scale * 0.2));
-  const priorityOrder = items.filter(i=>validPositive(i.length)!==null&&validPositive(i.width)!==null)
-    .sort((a,b) => furniturePriority(a,roomType)-furniturePriority(b,roomType) ||
-      Number(b.status === "existing")-Number(a.status === "existing") ||
-      (validPositive(b.length)??0)*(validPositive(b.width)??0)-(validPositive(a.length)??0)*(validPositive(a.width)??0));
-  const orders = [priorityOrder,
-    [...priorityOrder].sort((a,b) => furniturePriority(a,roomType)-furniturePriority(b,roomType) || validPositive(a.length)!-validPositive(b.length)!),
-    [...priorityOrder].sort((a,b) => furniturePriority(a,roomType)-furniturePriority(b,roomType) || validPositive(a.width)!-validPositive(b.width)!)];
-  const beamWidth = 32;
+  const usableWidth=roomPxW-2*WALL_OFF,usableHeight=roomPxH-2*WALL_OFF;
+  const validItems = items.filter(i=>{
+    const length=validPositive(i.length),width=validPositive(i.width);
+    return length!==null&&width!==null&&
+      ((length*scale<=usableWidth&&width*scale<=usableHeight)||(width*scale<=usableWidth&&length*scale<=usableHeight));
+  });
+  const area = (item:FurnitureItem) => (validPositive(item.length)??0)*(validPositive(item.width)??0);
+  const commonOrder = (tieBreak:(a:FurnitureItem,b:FurnitureItem)=>number) => [...validItems].sort((a,b) =>
+    furniturePriority(a,roomType)-furniturePriority(b,roomType) ||
+    Number(b.status === "existing")-Number(a.status === "existing") || tieBreak(a,b));
+  const orders = [
+    commonOrder((a,b)=>area(b)-area(a)),
+    commonOrder((a,b)=>(validPositive(a.length)??0)-(validPositive(b.length)??0) || area(b)-area(a)),
+    commonOrder((a,b)=>(validPositive(a.width)??0)-(validPositive(b.width)??0) || area(b)-area(a)),
+    commonOrder((a,b)=>area(a)-area(b)),
+    // Preserve room-type priority, but try planned items first within the same
+    // priority tier as an alternate anchor. This matters when a large existing
+    // piece otherwise occupies the only useful region for another same-tier item.
+    [...validItems].sort((a,b)=>
+      furniturePriority(a,roomType)-furniturePriority(b,roomType) ||
+      Number(a.status === "existing")-Number(b.status === "existing") ||
+      area(b)-area(a)),
+  ];
+  const distinctOrders=[...new Map(orders.map(order=>[order.map(item=>item.id).join("|"),order])).values()];
+  // The bounded beam retains alternate placements for earlier items, including
+  // alternative ordering within the same room-type priority tier.
+  const beamWidth = 36;
   const candidatesPerState = 16;
   type State = { placed: PlacedItem[]; next: number };
   const arrangements: PlacedItem[][] = [];
   const doorEntry = dSwing ? doorEntryPoint(doorWall, doorDistPx, doorPx, roomPxW, roomPxH) : null;
   const routeCache=new Map<string,number>();
+  const candidateCache=new Map<FurnitureItem,Candidate[]>();
   const routeScore=(placed:PlacedItem[])=>{
     if(!doorEntry)return 0;
     const key=placed.map(p=>`${p.item.id}:${Math.round(p.x)},${Math.round(p.y)},${p.rotation}`).sort().join("|");
@@ -399,7 +422,7 @@ export function placeItems(
     routeCache.set(key,score);
     return score;
   };
-  const priorities=[...new Set(priorityOrder.map(item=>furniturePriority(item,roomType)))].sort((a,b)=>a-b);
+  const priorities=[...new Set(validItems.map(item=>furniturePriority(item,roomType)))].sort((a,b)=>a-b);
   const priorityCounts=(placed:PlacedItem[],priority:number)=>placed.filter(p=>furniturePriority(p.item,roomType)===priority).length;
   const wallAlignmentCost=(item:FurnitureItem,p:Rect)=>{
     const walls=preferredWalls(furnitureKind(item),doorWall,roomType,winWall);
@@ -453,7 +476,7 @@ export function placeItems(
     if(Math.abs(separation)>0.01)return separation;
     return a.next-b.next;
   };
-  const selectCandidates=(candidates:Candidate[])=>{
+  const selectCandidates=(candidates:Candidate[],rotationPreference:0|90)=>{
     if(candidates.length<=candidatesPerState)return candidates;
     const buckets=new Map<string,Candidate[]>();
     for(const candidate of candidates){
@@ -464,32 +487,43 @@ export function placeItems(
     const selected:Candidate[]=[];
     for(const key of [...buckets.keys()].sort((a,b)=>{
       const [aw,ar]=a.split(":").map(Number),[bw,br]=b.split(":").map(Number);
-      return aw-bw||ar-br;
+      return aw-bw||Number(ar!==rotationPreference)-Number(br!==rotationPreference)||ar-br;
     }))selected.push(buckets.get(key)![0]);
     const remainder=candidates.filter(candidate=>!selected.includes(candidate));
     const slots=Math.min(candidatesPerState-selected.length,remainder.length);
     for(let i=0;i<slots;i++)selected.push(remainder[Math.floor((i+0.5)*remainder.length/slots)]);
     return selected.slice(0,candidatesPerState);
   };
-  for (const order of orders) {
+  for (let orderIndex=0;orderIndex<distinctOrders.length;orderIndex++) {
+    const order=distinctOrders[orderIndex];
+    const rotationPreference:0|90=orderIndex%2===0?0:90;
     let beam:State[]=[{placed:[],next:0}];
     for (const item of order) {
       const length = validPositive(item.length), width = validPositive(item.width);
       if (!length || !width) continue;
-      const dims: Array<{w:number;h:number;rotation:0|90}> = [{w:length*scale,h:width*scale,rotation:0},{w:width*scale,h:length*scale,rotation:90}];
+      const dims: Array<{w:number;h:number;rotation:0|90}> = [
+        {w:length*scale,h:width*scale,rotation:0},
+        {w:width*scale,h:length*scale,rotation:90},
+      ];
+      dims.sort((a,b)=>Number(a.rotation!==rotationPreference)-Number(b.rotation!==rotationPreference));
       const walls = preferredWalls(furnitureKind(item), doorWall, roomType, winWall);
-      const candidates: Candidate[] = [];
-      for (const dim of dims) {
-        for (const [wallRank,wall] of walls.entries()) {
-          for (const point of wallCandidates(wall,dim.w,dim.h,roomPxW,roomPxH,step)) candidates.push({...point,...dim,wallRank:wallRank*scale*8});
+      let candidates=candidateCache.get(item);
+      if(!candidates){
+        candidates=[];
+        for (const dim of dims) {
+          for (const [wallRank,wall] of walls.entries()) {
+            for (const point of wallCandidates(wall,dim.w,dim.h,roomPxW,roomPxH,step)) candidates.push({...point,...dim,wallRank:wallRank*scale*8});
+          }
+          for (const point of roomScanCandidates(dim.w,dim.h,roomPxW,roomPxH,step)) {
+            const distances=[point.y-WALL_OFF,roomPxH-WALL_OFF-(point.y+dim.h),point.x-WALL_OFF,roomPxW-WALL_OFF-(point.x+dim.w)];
+            const wallRank=Math.min(...walls.map((wall,index)=>index*scale*8+Math.max(0,distances[["Top","Bottom","Left","Right"].indexOf(wall)])));
+            candidates.push({...point,...dim,wallRank});
+          }
         }
-        for (const point of roomScanCandidates(dim.w,dim.h,roomPxW,roomPxH,step)) {
-          const distances=[point.y-WALL_OFF,roomPxH-WALL_OFF-(point.y+dim.h),point.x-WALL_OFF,roomPxW-WALL_OFF-(point.x+dim.w)];
-          const wallRank=Math.min(...walls.map((wall,index)=>index*scale*8+Math.max(0,distances[["Top","Bottom","Left","Right"].indexOf(wall)])));
-          candidates.push({...point,...dim,wallRank});
-        }
+        candidateCache.set(item,candidates);
       }
-      candidates.sort((a,b)=>a.wallRank-b.wallRank || a.y-b.y || a.x-b.x || a.rotation-b.rotation);
+      candidates=[...candidates];
+      candidates.sort((a,b)=>a.wallRank-b.wallRank || Number(a.rotation!==rotationPreference)-Number(b.rotation!==rotationPreference) || a.y-b.y || a.x-b.x || a.rotation-b.rotation);
       const expanded:State[]=[];
       for(const state of beam){
         expanded.push({placed:state.placed,next:state.next+1});
@@ -504,13 +538,35 @@ export function placeItems(
             );
           }
         }
+        // Grid sampling can miss the exact half-foot offset needed to pack a
+        // later item beside an earlier one. Add edge-aligned placements around
+        // each placed piece for both rotations; the usual boundary, opening,
+        // swing, and clearance filters below still decide whether they are valid.
+        for(const placed of state.placed)for(const dim of dims){
+          const centeredX=placed.x+(placed.w-dim.w)/2;
+          const centeredY=placed.y+(placed.h-dim.h)/2;
+          adjacent.push(
+            {x:placed.x-dim.w-WALK_CLR,y:placed.y,...dim,wallRank:0},
+            {x:placed.x-dim.w-WALK_CLR,y:placed.y+placed.h-dim.h,...dim,wallRank:0},
+            {x:placed.x-dim.w-WALK_CLR,y:centeredY,...dim,wallRank:0},
+            {x:placed.x+placed.w+WALK_CLR,y:placed.y,...dim,wallRank:0},
+            {x:placed.x+placed.w+WALK_CLR,y:placed.y+placed.h-dim.h,...dim,wallRank:0},
+            {x:placed.x+placed.w+WALK_CLR,y:centeredY,...dim,wallRank:0},
+            {x:placed.x,y:placed.y-dim.h-WALK_CLR,...dim,wallRank:0},
+            {x:placed.x+placed.w-dim.w,y:placed.y-dim.h-WALK_CLR,...dim,wallRank:0},
+            {x:centeredX,y:placed.y-dim.h-WALK_CLR,...dim,wallRank:0},
+            {x:placed.x,y:placed.y+placed.h+WALK_CLR,...dim,wallRank:0},
+            {x:placed.x+placed.w-dim.w,y:placed.y+placed.h+WALK_CLR,...dim,wallRank:0},
+            {x:centeredX,y:placed.y+placed.h+WALK_CLR,...dim,wallRank:0},
+          );
+        }
         const allCandidates=[...candidates,...adjacent];
         const valid=allCandidates.filter(c=>c.x>=WALL_OFF&&c.y>=WALL_OFF&&c.x+c.w<=roomPxW-WALL_OFF&&c.y+c.h<=roomPxH-WALL_OFF&&
           !(dSwing&&intersectsDoorSwing(c,dSwing))&&!(wClear&&polygonsOverlap(c,wClear))&&state.placed.every(p=>!polygonsOverlap(c,p,WALK_CLR)));
         const uniqueCandidates=[...new Map(valid.map(c=>[`${c.x},${c.y},${c.w},${c.h}`,c])).values()];
         uniqueCandidates.sort((a,b)=>a.wallRank-b.wallRank||a.y-b.y||a.x-b.x);
-        const chosen=selectCandidates(uniqueCandidates);
-        for(const candidate of adjacent)if(valid.includes(candidate)&&!chosen.some(c=>c.x===candidate.x&&c.y===candidate.y&&c.w===candidate.w&&c.h===candidate.h)&&chosen.length<candidatesPerState+4)chosen.push(candidate);
+        const chosen=selectCandidates(uniqueCandidates,rotationPreference);
+        for(const candidate of adjacent)if(valid.includes(candidate)&&!chosen.some(c=>c.x===candidate.x&&c.y===candidate.y&&c.w===candidate.w&&c.h===candidate.h)&&chosen.length<candidatesPerState+8)chosen.push(candidate);
         for(const candidate of chosen) expanded.push({placed:[...state.placed,{item,...candidate}],next:state.next+1});
       }
       const unique=new Map<string,State>();
@@ -573,20 +629,23 @@ export function calculateFurniturePlacement(data: RoomData, zoom = 1): Furniture
   const boundsPass=placed.every(p=>p.x>=WALL_OFF&&p.y>=WALL_OFF&&p.x+p.w<=roomPxW-WALL_OFF&&p.y+p.h<=roomPxH-WALL_OFF);
   const doorPass=dSwing ? placed.every(p=>!intersectsDoorSwing(p,dSwing)):false;
   const windowPass=wClear ? placed.every(p=>!polygonsOverlap(p,wClear)):false;
+  const usableRoomWidth=roomFtW-2*WALL_OFF/scale;
+  const usableRoomHeight=roomFtH-2*WALL_OFF/scale;
   for (const item of unplacedItems) {
     if (!validPositive(item.length) || !validPositive(item.width)) {
       unplacedReasons.set(item.id, "Furniture dimensions are missing or invalid, so a safe fit cannot be checked.");
       continue;
     }
-    const withoutOpenings = placeItems([item], roomPxW, roomPxH, scale, "Bottom", 0, 0, "Top", 0, 0, false, data.room.type);
-    if (withoutOpenings.length === 0) {
-      unplacedReasons.set(item.id, "The item is larger than the usable room area, even after rotation.");
+    const length=validPositive(item.length)!,width=validPositive(item.width)!;
+    const fitsRoomBounds=(length<=usableRoomWidth&&width<=usableRoomHeight)||(width<=usableRoomWidth&&length<=usableRoomHeight);
+    if (!fitsRoomBounds) {
+      unplacedReasons.set(item.id, "The item is larger than the usable room boundaries in both supported orientations.");
       continue;
     }
     const withOpenings = placeItems([item], roomPxW, roomPxH, scale, doorWall, doorDistPx, doorPx, winWall || "Top", winDistPx, winPx, windowKnown, data.room.type);
     unplacedReasons.set(item.id, withOpenings.length === 0
-      ? "The item fits the room by itself, but every candidate position conflicts with the saved door swing or window clearance."
-      : "The item fits by itself, but no position was found in this arrangement while preserving furniture spacing and the entrance route. A different arrangement may fit it.");
+      ? "The item fits the room boundaries by itself, but the bounded candidate search found no position with the configured door/window clearances. This search result does not prove that every possible position is blocked."
+      : "The item fits the room by itself, but the bounded multi-order search did not find a safe position alongside the other furniture. A different arrangement may fit it.");
   }
   const furnitureAreaSqFt=sumFurnitureArea(placed.map(p=>p.item));
   const unplacedFurnitureAreaSqFt=sumFurnitureArea(unplacedItems);

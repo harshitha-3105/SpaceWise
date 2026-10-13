@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { notifyStorageChange, useHasHydrated } from "../../../utils/browserStorage";
 import { CURRENT_ROOM_KEY, EDITING_ROOM_KEY } from "../../../utils/roomStorage";
@@ -22,7 +22,7 @@ interface RoomData {
   door: { enabled: boolean; wall: string; distance: string };
   window: { enabled: boolean; wall: string; distance: string };
 }
-type Verdict = "BUY" | "CONSIDER" | "DON'T BUY";
+type Verdict = "BUY" | "CONSIDER" | "DON'T BUY" | "EXISTING";
 interface FurnitureRec {
   item: FurnitureItem;
   verdict: Verdict;
@@ -54,23 +54,39 @@ function analyze(data: RoomData, placement: FurniturePlacement) {
   const checksComplete=Boolean(placement.roomKnown&&placement.checks.collisions.evaluated&&placement.checks.boundaries.evaluated&&accessChecksEvaluated&&(!windowCheckRequired||placement.checks.windows?.evaluated));
   const checksPassed=Boolean(placement.checks.collisions.passed&&placement.checks.boundaries.passed&&placement.checks.entranceAccess?.passed&&placement.checks.doorSwing?.passed&&placement.checks.walkingRoutes.passed&&(!windowCheckRequired||placement.checks.windows?.passed));
   const spaceLimited=(utilization??0)>85||(walkingPct!==null&&walkingPct<25);
+  const checkConcerns:string[]=[];
+  if(!placement.checks.collisions.passed)checkConcerns.push("furniture collision check failed");
+  if(!placement.checks.boundaries.passed)checkConcerns.push("room boundary check failed");
+  if(!placement.checks.doorSwing?.evaluated)checkConcerns.push("door swing was not evaluated");
+  else if(!placement.checks.doorSwing.passed)checkConcerns.push("door swing clearance failed");
+  if(!placement.checks.entranceAccess?.evaluated)checkConcerns.push("entrance access was not evaluated");
+  else if(!placement.checks.entranceAccess.passed)checkConcerns.push("entrance access failed");
+  if(!placement.checks.walkingRoutes.evaluated)checkConcerns.push("walking route was not evaluated");
+  else if(!placement.checks.walkingRoutes.passed)checkConcerns.push("walking route failed");
+  if(windowCheckRequired&&!placement.checks.windows?.evaluated)checkConcerns.push("supplied window clearance was not evaluated");
+  else if(windowCheckRequired&&!placement.checks.windows?.passed)checkConcerns.push("supplied window clearance failed");
   // Existing items are not purchase candidates. A placed planned item receives BUY only
   // when the full plan and its required geometry checks pass without crowding.
-  const recommendations:FurnitureRec[]=data.planned.filter(item=>item.status==="planned").map(item=>{
+  const recommendations:FurnitureRec[]=[...data.existing,...data.planned].map(item=>{
     const l=Number.parseFloat(item.length),w=Number.parseFloat(item.width),area=Number.isFinite(l*w)?l*w:0;
     const pct=roomArea?area/roomArea*100:null, reason=placement.unplacedReasons.get(item.id);
+    const spaceImpact=area>0?`${area.toFixed(1)} sq ft footprint${pct===null?"":` (${pct.toFixed(0)}% of room area)`}`:"Unknown";
+    const remainingAfter=placement.walkingAreaSqFt===null?null:Math.max(0,placement.walkingAreaSqFt-area);
+    const notPlacedWalkingImpact=remainingAfter===null?"Not placed; remaining floor estimate unavailable":`Not placed; if added, estimated remaining floor area would be ${remainingAfter.toFixed(1)} sq ft. Route status for that layout is unknown.`;
+    const placedWalkingImpact=`Estimated remaining floor area: ${placement.walkingAreaSqFt?.toFixed(1)??"unknown"} sq ft; ${placement.checks.walkingRoutes.evaluated?(placement.checks.walkingRoutes.passed?"2 ft route verified":"2 ft route failed"):"2 ft route not evaluated"}.`;
+    if(item.status==="existing")return {item,verdict:"EXISTING",fitStatus:placedIds.has(item.id)?"Existing item — placed":"Existing item — not placed",reason:placedIds.has(item.id)?"This item is marked as existing; no purchase recommendation is made.":`This item is marked as existing; no purchase recommendation is made. ${reason||"Its current placement could not be verified."}`,spaceImpact,walkingImpact:placedIds.has(item.id)?placedWalkingImpact:notPlacedWalkingImpact,alternative:placedIds.has(item.id)?undefined:"Review the room arrangement or its saved dimensions."};
     if(!placement.roomKnown)return {item,verdict:"CONSIDER",fitStatus:"Unknown",reason:"Room dimensions are missing or invalid, so fit cannot be evaluated.",spaceImpact:"Unknown",walkingImpact:"Unknown"};
     if(reason||!placedIds.has(item.id)){
-      const cannotFit=reason?.startsWith("The item is larger")||reason?.includes("every candidate position conflicts");
-      return {item,verdict:cannotFit?"DON'T BUY":"CONSIDER",fitStatus:"Not placed",reason:cannotFit?`${item.name||item.category}: ${reason} The configured size cannot be placed safely with the room openings.`:`${item.name||item.category}: ${reason||"No valid placement found."} The current search did not find a safe arrangement; this is not proof that no alternative arrangement exists.`,spaceImpact:pct===null?"Unknown":`${pct.toFixed(0)}% of room area if placed`,walkingImpact:"Not currently placed",alternative:"Consider a smaller item or revise the layout."};
+      const cannotFit=reason?.startsWith("The item is larger than the usable room boundaries");
+      return {item,verdict:cannotFit?"DON'T BUY":"CONSIDER",fitStatus:"Not placed",reason:cannotFit?`${item.name||item.category}: ${reason} This is a dimension-based room-boundary result.`:`${item.name||item.category}: ${reason||"No valid placement found."} The search is bounded and did not prove that no other arrangement exists.`,spaceImpact,walkingImpact:notPlacedWalkingImpact,alternative:"Consider a smaller item and regenerate the layout; current search uncertainty is not proof the item cannot fit."};
     }
     const fitStatus="Planned item — placed in layout";
-    if(placement.criticalObstructionItemIds.includes(item.id))return {item,verdict:"DON'T BUY",fitStatus,reason:"Removing this planned item restores the verified 2 ft entrance-to-destination route. It is a critical obstruction in this layout.",spaceImpact:`${pct?.toFixed(0)??"?"}% of total area`,walkingImpact:"Blocks the verified route",alternative:"Choose a smaller item or a different position."};
-    if(!checksComplete)return {item,verdict:"CONSIDER",fitStatus,reason:"The item is placed, but one or more required entrance, door, boundary, collision, or window checks could not be evaluated. Purchase suitability is not established.",spaceImpact:`${pct?.toFixed(0)??"?"}% of total area`,walkingImpact:"Route status incomplete"};
-    if(!checksPassed)return {item,verdict:"CONSIDER",fitStatus,reason:"The item is placed, but the generated room has a failed access or clearance check. Review the layout before buying.",spaceImpact:`${pct?.toFixed(0)??"?"}% of total area`,walkingImpact:"A required access/clearance check failed"};
-    if(placement.unplacedItems.length>0)return {item,verdict:"CONSIDER",fitStatus,reason:"This item is placed, but other saved furniture is unplaced, so the complete room plan has not passed fit validation.",spaceImpact:`${pct?.toFixed(0)??"?"}% of total area`,walkingImpact:"Full layout not validated"};
-    if(spaceLimited)return {item,verdict:"CONSIDER",fitStatus,reason:"This item fits, but estimated remaining floor area or utilization is limited. Placement alone does not establish that purchasing it is practical.",spaceImpact:`${pct?.toFixed(0)??"?"}% of total area`,walkingImpact:"Limited estimated space"};
-    return {item,verdict:"BUY",fitStatus,reason:"The item is placed and the complete layout passes the evaluated 2 ft entrance route, door swing, furniture-fit, boundary, collision, and applicable window checks; estimated remaining area is not limited.",spaceImpact:`${pct?.toFixed(0)??"?"}% of total area`,walkingImpact:"Verified route passes"};
+    if(placement.criticalObstructionItemIds.includes(item.id))return {item,verdict:"DON'T BUY",fitStatus,reason:"Removing this planned item restores the verified 2 ft entrance-to-destination route. It is a critical obstruction in this layout.",spaceImpact,walkingImpact:"Blocks the verified 2 ft route",alternative:"Choose a smaller item or try a different position."};
+    if(!checksComplete)return {item,verdict:"CONSIDER",fitStatus,reason:`The item is placed, but purchase suitability is not established: ${checkConcerns.join("; ")||"required layout checks are incomplete"}.`,spaceImpact,walkingImpact:placedWalkingImpact};
+    if(!checksPassed)return {item,verdict:"CONSIDER",fitStatus,reason:`The item is placed, but a required layout check failed: ${checkConcerns.join("; ")||"review the generated layout"}.`,spaceImpact,walkingImpact:placedWalkingImpact};
+    if(placement.unplacedItems.length>0)return {item,verdict:"CONSIDER",fitStatus,reason:"This item is placed, but other saved furniture is unplaced, so the complete room plan has not passed fit validation.",spaceImpact,walkingImpact:placedWalkingImpact};
+    if(spaceLimited)return {item,verdict:"CONSIDER",fitStatus,reason:"The complete layout checks pass, but estimated remaining floor area or utilization is limited. Placement alone does not establish that purchase is practical.",spaceImpact,walkingImpact:placedWalkingImpact};
+    return {item,verdict:"BUY",fitStatus,reason:"The item is placed; all furniture is placed, required room/door/access/window checks pass, and estimated remaining floor area is not limited.",spaceImpact,walkingImpact:placedWalkingImpact};
   });
   const utilizationScore=utilization===null?null:utilization<=75?100:utilization<=85?80:utilization<=92?55:30;
   const walkingScore=walkingStatus==="Unknown"?null:walkingStatus==="High"?100:walkingStatus==="Moderate"?65:30;
@@ -109,6 +125,7 @@ function analyze(data: RoomData, placement: FurniturePlacement) {
 function verdictColor(v: Verdict) {
   if (v === "BUY")         return { bg: "rgba(79,255,176,0.1)",  border: "rgba(79,255,176,0.35)",  text: "#4fffb0" };
   if (v === "CONSIDER")    return { bg: "rgba(255,179,71,0.1)",  border: "rgba(255,179,71,0.35)",  text: "#ffb347" };
+  if (v === "EXISTING")    return { bg: "rgba(0,212,255,0.08)", border: "rgba(0,212,255,0.3)", text: "#00d4ff" };
   return                          { bg: "rgba(255,80,100,0.1)",  border: "rgba(255,80,100,0.35)",  text: "#ff5064" };
 }
 function walkingColor(s: string) {
@@ -202,6 +219,7 @@ export default function AnalysisPage() {
   const requestMatches = cloudResult?.userId === user?.id && cloudResult?.planId === params.id;
   const data = requestMatches ? cloudResult?.plan ?? null : null;
   const loaded = useHasHydrated();
+  const calculatedPlacement = useMemo(() => data ? calculateFurniturePlacement(data) : null, [data]);
 
   if (!loaded || authLoading || (user && (cloudLoading || !requestMatches))) {
     return (
@@ -231,7 +249,7 @@ export default function AnalysisPage() {
     notifyStorageChange(EDITING_ROOM_KEY, "session");
   }
 
-  const placement = calculateFurniturePlacement(data);
+  const placement = calculatedPlacement!;
   const r = analyze(data, placement);
   const allItems = [...data.existing, ...data.planned];
 
